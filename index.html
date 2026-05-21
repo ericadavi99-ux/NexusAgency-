@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NexusAgency | Loja Premium</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        :root { --primary: #4f46e5; --bg: #020617; --card: rgba(30, 41, 59, 0.4); --border: rgba(255, 255, 255, 0.08); }
+        
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
+        body { background: var(--bg); color: white; display: flex; justify-content: center; padding: 20px 20px 140px 20px; min-height: 100vh; margin: 0; overflow-x: hidden; position: relative; font-family: 'Inter', sans-serif; }
+        .particles { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; background: radial-gradient(circle at center, #1e1b4b 0%, #020617 100%); }
+        .particle { position: absolute; background: white; border-radius: 50%; opacity: 0.2; animation: float linear infinite; }
+        @keyframes float { 0% { transform: translateY(100vh); } 100% { transform: translateY(-10vh); } }
+
+        .container { width: 100%; max-width: 1000px; z-index: 1; }
+        .header { text-align: center; margin-bottom: 30px; margin-top: 20px; }
+        .header h1 { font-size: 36px; color: #fff; margin-bottom: 2px; font-weight: 700; letter-spacing: -1px; }
+        .header .dev-credits { font-size: 11px; color: #64748b; margin-bottom: 8px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+        .header p { color: #94a3b8; font-size: 15px; margin-top: 0; }
+        
+        .security-banner { max-width: 500px; margin: 0 auto 30px auto; background: #1e293b; padding: 12px; border-radius: 14px; text-align: center; border: 1px solid #334155; }
+        .notice { font-size: 13px; color: #fff; font-weight: 600; }
+
+        .section-title { font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; margin: 40px 0 20px 0; color: #94a3b8; display: flex; align-items: center; gap: 8px; }
+
+        /* Grid de Produtos */
+        .products-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
+        @media (min-width: 600px) { .products-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (min-width: 900px) { .products-grid { grid-template-columns: repeat(3, 1fr); } }
+
+        .product-card { background: var(--card); border: 1px solid var(--border); padding: 25px 20px; border-radius: 20px; display: flex; flex-direction: column; justify-content: space-between; height: 100%; transition: transform 0.2s, border-color 0.2s; }
+        .product-card:hover { border-color: var(--primary); transform: translateY(-4px); background: rgba(30, 41, 59, 0.6); }
+        .product-card h3 { margin: 0 0 8px 0; font-size: 18px; font-weight: 600; }
+        .product-card p { margin: 0 0 20px 0; color: #94a3b8; font-size: 13px; line-height: 1.5; flex-grow: 1; }
+        
+        .price-and-btn { display: flex; justify-content: space-between; align-items: center; width: 100%; margin-top: auto; gap: 10px; }
+        .product-price { color: #10b981; font-weight: bold; font-size: 18px; white-space: nowrap; }
+        .btn-add { background: var(--primary); border: none; color: white; font-weight: bold; padding: 12px 20px; border-radius: 12px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+        .btn-add:active { transform: scale(0.95); }
+
+        /* Barra Inferior Fixa */
+        .bottom-nav { position: fixed; bottom: env(safe-area-inset-bottom, 20px); left: 50%; transform: translateX(-50%); width: calc(100% - 30px); max-width: 450px; background: #0f172a; border: 1px solid #334155; padding: 12px 20px; border-radius: 24px; display: flex; justify-content: space-between; align-items: center; z-index: 999; box-shadow: 0 10px 30px rgba(0,0,0,0.6); }
+        .nav-btn { background: #1e293b; border: 1px solid #334155; padding: 12px 18px; border-radius: 14px; cursor: pointer; color: white; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; flex-grow: 1; justify-content: center; margin: 0 4px; }
+        .cart-count-badge { background: #10b981; color: white; border-radius: 50%; padding: 2px 8px; font-size: 12px; font-weight: bold; }
+
+        /* NOVO SISTEMA DE ABAS FIXAS (PROVA DE FALHAS E CLIQUES FANTASMAS) */
+        .side-panel { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #111827; z-index: 5000; padding: 40px 24px; overflow-y: auto; color: white; }
+        @media (min-width: 500px) {
+            .side-panel { left: auto; right: 0; width: 450px; border-left: 2px solid #374151; box-shadow: -10px 0 40px rgba(0,0,0,0.5); }
+        }
+        
+        .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #374151; }
+        .panel-header h2 { margin: 0; font-size: 22px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+        
+        .panel-close-btn { background: #374151; border: none; color: white; font-size: 16px; font-weight: bold; padding: 8px 16px; border-radius: 10px; cursor: pointer; }
+        .panel-close-btn:hover { background: #4b5563; }
+
+        .cart-item-row { display: flex; justify-content: space-between; align-items: center; background: #1f2937; padding: 16px; border-radius: 14px; margin-bottom: 12px; border: 1px solid #374151; }
+        .qty-btn { background: #4b5563; border: none; color: white; width: 36px; height: 36px; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 18px; display: inline-flex; align-items: center; justify-content: center; }
+
+        .input-field { width: 100%; padding: 15px; margin-bottom: 15px; border-radius: 12px; background: #020617; border: 1px solid #374151; color: white; font-size: 14px; display: block; font-family: 'Inter', sans-serif; }
+        .btn-pay { width: 100%; padding: 16px; background: #10b981; border: none; border-radius: 12px; color: white; font-weight: bold; cursor: pointer; font-size: 16px; text-transform: uppercase; }
+        .btn-save-cart { width: 100%; padding: 12px; background: transparent; border: 1px solid #374151; border-radius: 12px; color: #94a3b8; font-weight: bold; cursor: pointer; font-size: 13px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="particles" id="particles"></div>
+
+<div class="bottom-nav">
+    <button class="nav-btn" style="border-color: #38bdf8;" onclick="openPanel('feedback-panel')">
+        💬 <span style="color: #38bdf8;">Feedback</span>
+    </button>
+    <button class="nav-btn" style="border-color: #10b981;" onclick="openPanel('cart-panel')">
+        🛒 Carrinho <span id="cart-badge-count" class="cart-count-badge">0</span>
+    </button>
+</div>
+
+<div class="container">
+    <div class="header">
+        <h1>NexusAgency</h1>
+        <div class="dev-credits">esse site foi feito por hugoks38 dev</div>
+        <p>Serviços Digitais de Alta Performance</p>
+    </div>
+
+    <div class="security-banner">
+        <div id="notice-text" class="notice">🛡️ Pagamento seguro via Santander</div>
+    </div>
+
+    <div class="section-title">🛍️ Nossos Serviços</div>
+    <div class="products-grid">
+        <div class="product-card">
+            <div>
+                <h3>Servidores Personalizados</h3>
+                <p>Configuração completa, permissões blindadas e visual profissional para seu Discord.</p>
+            </div>
+            <div class="price-and-btn">
+                <div class="product-price">R$ 20,00</div>
+                <button class="btn-add" onclick="addItemToCart('Servidores Personalizados', 20)">Comprar</button>
+            </div>
+        </div>
+        
+        <div class="product-card">
+            <div>
+                <h3>Design Premium</h3>
+                <p>Logos marcantes, artes conceituais, Slides modernos e Identidade Visual única.</p>
+            </div>
+            <div class="price-and-btn">
+                <div class="product-price">R$ 15,00</div>
+                <button class="btn-add" onclick="addItemToCart('Design Premium (Logo & Slides)', 15)">Comprar</button>
+            </div>
+        </div>
+
+        <div class="product-card">
+            <div>
+                <h3>Manutenção Geral</h3>
+                <p>Correção ágil de bugs, configuração de bots, novos cargos e canais no seu server.</p>
+            </div>
+            <div class="price-and-btn">
+                <div class="product-price">R$ 10,00</div>
+                <button class="btn-add" onclick="addItemToCart('Manutenção Geral', 10)">Comprar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="feedback-panel" class="side-panel">
+    <div class="panel-header">
+        <h2>💬 Enviar Feedback</h2>
+        <button class="panel-close-btn" onclick="closeAllPanels()">Fechar</button>
+    </div>
+    <p style="color: #94a3b8; font-size: 14px; margin-top: 0; margin-bottom: 25px;">Sua avaliação vai direto para a moderação do dono.</p>
+    <input type="text" id="fb-discord" class="input-field" placeholder="Seu @ do Discord">
+    <textarea id="fb-message" class="input-field" rows="5" placeholder="Sua experiência..." style="resize: none;"></textarea>
+    <button class="btn-pay" style="background: #38bdf8;" onclick="sendFeedback()">ENVIAR AVALIAÇÃO</button>
+</div>
+
+<div id="cart-panel" class="side-panel">
+    <div class="panel-header">
+        <h2>🛒 Seu Carrinho</h2>
+        <button class="panel-close-btn" onclick="closeCartWithWarning()">Fechar</button>
+    </div>
+    <p style="color: #ef4444; font-size: 12px; margin-top: 0; margin-bottom: 20px; font-weight: bold;">⚠️ Fechar no botão limpa seus itens salvos!</p>
+    
+    <div id="cart-list-container"></div>
+    
+    <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 20px; margin: 25px 0; padding-top: 20px; border-top: 1px solid #374151;">
+        <span>Total:</span>
+        <span style="color:#10b981;">R$ <span id="cart-total-value">0,00</span></span>
+    </div>
+    <button class="btn-pay" style="background: var(--primary);" onclick="openCheckout()">AVANÇAR PARA PAGAMENTO</button>
+    <button class="btn-save-cart" onclick="closeAllPanels()">💾 APENAS MINIMIZAR / SALVAR</button>
+</div>
+
+<div id="checkout-panel" class="side-panel">
+    <div class="panel-header">
+        <h2>🔒 Pagamento PIX</h2>
+        <button class="panel-close-btn" onclick="openPanel('cart-panel')">Voltar</button>
+    </div>
+    <div id="pix-alert-value" style="background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; color: #10b981; padding: 14px; border-radius: 12px; font-weight: bold; font-size: 15px; margin-bottom: 20px; text-align: center;"></div>
+    
+    <div style="text-align: center; margin-bottom: 20px;">
+        <img id="qr-code" src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=00020126800014br.gov.bcb.pix01368d9414bf-fc48-4158-8c1d-701a9d2716a00212Loja%20Nexus52040000530398654050.005802BR5915ERICA%20GONCALVES6009SAO%20PAULO62070503***63048A41" width="180" style="border-radius: 14px; border: 4px solid white; display: inline-block;">
+    </div>
+
+    <button class="input-field" style="cursor:pointer; background:#232d3f; text-align: center; font-weight: bold;" onclick="copiarPix()">📋 COPIAR CHAVE PIX GERAL</button>
+    <input type="text" id="client-name" class="input-field" placeholder="Seu nome do Discord">
+    <input type="file" id="proof-file" hidden accept="image/*">
+    <button class="input-field" style="cursor:pointer; text-align: center; background: #232d3f;" onclick="document.getElementById('proof-file').click()">📎 Anexar Imagem do Comprovante</button>
+    <button class="btn-pay" onclick="sendOrder()">CONFIRMAR PAGAMENTO</button>
+</div>
+
+<script>
+    const T = "8758890343:AAFxAzlIY53_F0UadlhE1RzzbnopAEO9WEo";
+    const ID = "7960867927";
+    const pixGeral = "00020126800014br.gov.bcb.pix01368d9414bf-fc48-4158-8c1d-701a9d2716a00212Loja%20Nexus52040000530398654050.005802BR5915ERICA%20GONCALVES6009SAO%20PAULO62070503***63048A41";
+    
+    let cart = {};
+
+    // Partículas de Fundo
+    const container = document.getElementById('particles');
+    for(let i=0; i<15; i++) {
+        const p = document.createElement('div');
+        p.className = 'particle';
+        p.style.left = Math.random() * 100 + 'vw';
+        p.style.animationDuration = (Math.random() * 5 + 5) + 's';
+        p.style.width = p.style.height = Math.random() * 3 + 2 + 'px';
+        container.appendChild(p);
+    }
+
+    // Controle Sólido de Painéis Estilo Abas Fixas
+    function openPanel(id) {
+        closeAllPanels();
+        document.getElementById(id).style.display = 'block';
+    }
+
+    function closeAllPanels() {
+        document.getElementById('cart-panel').style.display = 'none';
+        document.getElementById('checkout-panel').style.display = 'none';
+        document.getElementById('feedback-panel').style.display = 'none';
+    }
+
+    function addItemToCart(name, price) {
+        if (cart[name]) cart[name].qty += 1;
+        else cart[name] = { price: price, qty: 1 };
+        renderCart();
+        alert("Adicionado ao carrinho! Abra a aba 'Carrinho' abaixo para ver.");
+    }
+
+    function changeQty(name, amount) {
+        if (!cart[name]) return;
+        cart[name].qty += amount;
+        if (cart[name].qty <= 0) delete cart[name];
+        renderCart();
+    }
+
+    function renderCart() {
+        const listContainer = document.getElementById('cart-list-container');
+        listContainer.innerHTML = '';
+        let total = 0, totalItems = 0;
+
+        for (const [name, item] of Object.entries(cart)) {
+            const itemTotal = item.price * item.qty;
+            total += itemTotal; totalItems += item.qty;
+            listContainer.innerHTML += `
+                <div class="cart-item-row">
+                    <div style="text-align: left;">
+                        <div style="font-weight: bold; font-size: 14px; color: white;">${name}</div>
+                        <div style="color: #cbd5e1; font-size: 12px; margin-top: 4px;">R$ ${item.price},00</div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <button class="qty-btn" onclick="changeQty('${name}', -1)">-</button>
+                        <span style="font-weight: bold; color: white; min-width: 20px; text-align:center;">${item.qty}</span>
+                        <button class="qty-btn" onclick="changeQty('${name}', 1)">+</button>
+                    </div>
+                </div>`;
+        }
+        if (totalItems === 0) listContainer.innerHTML = '<p style="color: #94a3b8; font-size: 14px; text-align: center; padding: 20px 0;">Seu carrinho está vazio.</p>';
+        document.getElementById('cart-badge-count').innerText = totalItems;
+        document.getElementById('cart-total-value').innerText = total + ",00";
+    }
+
+    function closeCartWithWarning() { 
+        if (Object.keys(cart).length > 0) {
+            if (!confirm("Deseja realmente fechar e limpar o carrinho?")) return;
+        }
+        cart = {}; 
+        renderCart(); 
+        closeAllPanels(); 
+    }
+    
+    function copiarPix() { navigator.clipboard.writeText(pixGeral); alert("Chave PIX copiada com sucesso!"); }
+
+    function openCheckout() {
+        let totalValue = document.getElementById('cart-total-value').innerText;
+        if(totalValue === "0,00" || totalValue === "0") return alert("Adicione algum serviço ao carrinho primeiro!");
+        document.getElementById('pix-alert-value').innerText = `Valor Total a Pagar: R$ ${totalValue}`;
+        openPanel('checkout-panel');
+    }
+
+    async function sendFeedback() {
+        const discord = document.getElementById('fb-discord').value.trim();
+        const message = document.getElementById('fb-message').value.trim();
+        if(!discord || !message) return alert("Por favor, preencha todos os campos!");
+
+        const payload = {
+            chat_id: ID,
+            text: `💬 **NOVO FEEDBACK PARA AVALIAÇÃO**\n\n👤 **User:** ${discord}\n📝 **Texto:** "${message}"`,
+            parse_mode: "Markdown",
+            reply_markup: JSON.stringify({
+                inline_keyboard: [[
+                    { text: "✅ Aprovar", callback_data: `fb_aprovado_${discord}` },
+                    { text: "❌ Recusar", callback_data: "fb_recusado" }
+                ]]
+            })
+        };
+
+        try {
+            await fetch(`https://api.telegram.org/bot${T}/sendMessage`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+            alert("Feedback enviado com sucesso!");
+            closeAllPanels();
+            document.getElementById('fb-discord').value = "";
+            document.getElementById('fb-message').value = "";
+        } catch(e) { alert("Erro ao enviar feedback."); }
+    }
+
+    async function sendOrder() {
+        const name = document.getElementById('client-name').value.trim();
+        const file = document.getElementById('proof-file').files[0];
+        if(!name || !file) return alert("Insira seu nome do Discord e envie a imagem do comprovante!");
+
+        let resumo = "";
+        for (const [prodName, item] of Object.entries(cart)) { resumo += `\n📦 ${prodName} (x${item.qty})`; }
+        const total = document.getElementById('cart-total-value').innerText;
+
+        const fd = new FormData();
+        fd.append("chat_id", ID);
+        fd.append("photo", file);
+        fd.append("caption", `🚨 **NOVO PEDIDO PENDENTE**\n\n👤 **Cliente:** ${name}\n🛒 **Itens:** ${resumo}\n💰 **Total:** R$ ${total}`);
+        fd.append("reply_markup", JSON.stringify({
+            inline_keyboard: [[
+                { text: "✅ Confirmar Entrega", callback_data: `pedido_entregue_${name}` },
+                { text: "❌ Recusar", callback_data: "pedido_recusado" }
+            ]]
+        }));
+
+        try {
+            await fetch(`https://api.telegram.org/bot${T}/sendPhoto`, { method: "POST", body: fd });
+            alert("Pedido enviado para aprovação dos administradores!");
+            cart = {}; 
+            renderCart(); 
+            closeAllPanels();
+            document.getElementById('client-name').value = "";
+            document.getElementById('proof-file').value = "";
+        } catch(e) { alert("Erro ao processar pedido."); }
+    }
+</script>
+</body>
+</html>
+
