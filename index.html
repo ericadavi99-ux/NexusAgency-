@@ -46,7 +46,7 @@
         .nav-btn { background: #1e293b; border: 1px solid #334155; padding: 12px 18px; border-radius: 14px; cursor: pointer; color: white; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; flex-grow: 1; justify-content: center; margin: 0 4px; }
         .cart-count-badge { background: #10b981; color: white; border-radius: 50%; padding: 2px 8px; font-size: 12px; font-weight: bold; }
 
-        /* NOVO SISTEMA DE ABAS FIXAS (PROVA DE FALHAS E CLIQUES FANTASMAS) */
+        /* Painéis Laterais */
         .side-panel { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #111827; z-index: 5000; padding: 40px 24px; overflow-y: auto; color: white; }
         @media (min-width: 500px) {
             .side-panel { left: auto; right: 0; width: 450px; border-left: 2px solid #374151; box-shadow: -10px 0 40px rgba(0,0,0,0.5); }
@@ -70,6 +70,15 @@
 
 <div class="particles" id="particles"></div>
 
+<div id="delivery-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 99999; justify-content: center; align-items: center; padding: 20px;">
+    <div style="background: #1e293b; padding: 30px; border-radius: 20px; text-align: center; border: 2px solid #10b981; width: 100%; max-width: 400px;">
+        <h2 style="color: #10b981; margin-top: 0;">🎉 Pedido Aprovado!</h2>
+        <p style="color: #cbd5e1;">Seu produto foi liberado com sucesso.</p>
+        <a id="delivery-link" href="#" target="_blank" style="display: block; background: var(--primary); color: white; padding: 15px; border-radius: 12px; text-decoration: none; font-weight: bold; margin-top: 20px;">ACESSAR PRODUTO</a>
+        <button onclick="document.getElementById('delivery-modal').style.display='none'" style="margin-top: 15px; background: transparent; border: none; color: #94a3b8; cursor: pointer; text-decoration: underline;">Fechar</button>
+    </div>
+</div>
+
 <div class="bottom-nav">
     <button class="nav-btn" style="border-color: #38bdf8;" onclick="openPanel('feedback-panel')">
         💬 <span style="color: #38bdf8;">Feedback</span>
@@ -92,6 +101,18 @@
 
     <div class="section-title">🛍️ Nossos Serviços</div>
     <div class="products-grid">
+        
+        <div class="product-card">
+            <div>
+                <h3>Scripts para Roblox</h3>
+                <p>Scripts otimizados, seguros e 100% indetectáveis para <strong>qualquer jogo</strong> da plataforma.</p>
+            </div>
+            <div class="price-and-btn">
+                <div class="product-price">R$ 25,00</div>
+                <button class="btn-add" onclick="addItemToCart('Scripts para Roblox', 25)">Comprar</button>
+            </div>
+        </div>
+
         <div class="product-card">
             <div>
                 <h3>Servidores Personalizados</h3>
@@ -191,7 +212,38 @@
         container.appendChild(p);
     }
 
-    // Controle Sólido de Painéis Estilo Abas Fixas
+    // ESCUTADOR DO TELEGRAM (Listener)
+    // Verifica a cada 5 segundos se você enviou o comando /link
+    let lastUpdateId = 0;
+    setInterval(async () => {
+        try {
+            let response = await fetch(`https://api.telegram.org/bot${T}/getUpdates`);
+            let data = await response.json();
+            
+            if (data.ok && data.result.length > 0) {
+                for (let update of data.result) {
+                    if (update.update_id > lastUpdateId) {
+                        lastUpdateId = update.update_id;
+                        let msg = update.message || update.channel_post;
+                        
+                        if (msg && msg.text) {
+                            let texto = msg.text;
+                            // Se a mensagem contiver o comando /link
+                            if (texto.includes('/link ')) {
+                                let link = texto.split('/link ')[1].trim();
+                                document.getElementById('delivery-link').href = link;
+                                document.getElementById('delivery-modal').style.display = 'flex';
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (e) {
+            // Silencioso para não incomodar a interface
+        }
+    }, 5000);
+
+    // Controle de Painéis
     function openPanel(id) {
         closeAllPanels();
         document.getElementById(id).style.display = 'block';
@@ -303,7 +355,7 @@
         const fd = new FormData();
         fd.append("chat_id", ID);
         fd.append("photo", file);
-        fd.append("caption", `🚨 **NOVO PEDIDO PENDENTE**\n\n👤 **Cliente:** ${name}\n🛒 **Itens:** ${resumo}\n💰 **Total:** R$ ${total}`);
+        fd.append("caption", `🚨 **NOVO PEDIDO PENDENTE**\n\n👤 **Cliente:** ${name}\n🛒 **Itens:** ${resumo}\n💰 **Total:** R$ ${total}\n\n👉 *Para entregar o produto, responda com: /link SUA_URL_AQUI*`);
         fd.append("reply_markup", JSON.stringify({
             inline_keyboard: [[
                 { text: "✅ Confirmar Entrega", callback_data: `pedido_entregue_${name}` },
@@ -313,7 +365,7 @@
 
         try {
             await fetch(`https://api.telegram.org/bot${T}/sendPhoto`, { method: "POST", body: fd });
-            alert("Pedido enviado para aprovação dos administradores!");
+            alert("Pedido enviado para aprovação! Aguarde a notificação de entrega.");
             cart = {}; 
             renderCart(); 
             closeAllPanels();
@@ -324,4 +376,3 @@
 </script>
 </body>
 </html>
-
