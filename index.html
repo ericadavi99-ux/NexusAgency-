@@ -64,11 +64,19 @@
         .input-field { width: 100%; padding: 15px; margin-bottom: 15px; border-radius: 12px; background: #020617; border: 1px solid #374151; color: white; font-size: 14px; display: block; font-family: 'Inter', sans-serif; }
         .btn-pay { width: 100%; padding: 16px; background: #10b981; border: none; border-radius: 12px; color: white; font-weight: bold; cursor: pointer; font-size: 16px; text-transform: uppercase; }
         .btn-save-cart { width: 100%; padding: 12px; background: transparent; border: 1px solid #374151; border-radius: 12px; color: #94a3b8; font-weight: bold; cursor: pointer; font-size: 13px; margin-top: 10px; }
+
+        /* NOVO: Sistema de Notificações Toast */
+        #toast-container { position: fixed; top: 20px; right: 20px; z-index: 999999; display: flex; flex-direction: column; gap: 10px; }
+        .toast { background: #1e293b; color: white; padding: 15px 20px; border-radius: 12px; border-left: 4px solid #10b981; box-shadow: 0 4px 15px rgba(0,0,0,0.5); font-size: 14px; font-weight: 600; animation: slideIn 0.3s ease forwards; transition: opacity 0.3s; display: flex; align-items: center; gap: 10px; }
+        .toast.error { border-left-color: #ef4444; }
+        @keyframes slideIn { from { transform: translateX(120%); } to { transform: translateX(0); } }
     </style>
 </head>
 <body>
 
 <div class="particles" id="particles"></div>
+
+<div id="toast-container"></div>
 
 <div id="delivery-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 99999; justify-content: center; align-items: center; padding: 20px;">
     <div style="background: #1e293b; padding: 30px; border-radius: 20px; text-align: center; border: 2px solid #10b981; width: 100%; max-width: 400px;">
@@ -153,7 +161,7 @@
         <h2>💬 Enviar Feedback</h2>
         <button class="panel-close-btn" onclick="closeAllPanels()">Fechar</button>
     </div>
-    <p style="color: #94a3b8; font-size: 14px; margin-top: 0; margin-bottom: 25px;">Sua avaliação vai direto para a moderação do dono.</p>
+    <p style="color: #94a3b8; font-size: 14px; margin-top: 0; margin-bottom: 25px;">Sua avaliação vai direto para a moderação.</p>
     <input type="text" id="fb-discord" class="input-field" placeholder="Seu @ do Discord">
     <textarea id="fb-message" class="input-field" rows="5" placeholder="Sua experiência..." style="resize: none;"></textarea>
     <button class="btn-pay" style="background: #38bdf8;" onclick="sendFeedback()">ENVIAR AVALIAÇÃO</button>
@@ -162,9 +170,8 @@
 <div id="cart-panel" class="side-panel">
     <div class="panel-header">
         <h2>🛒 Seu Carrinho</h2>
-        <button class="panel-close-btn" onclick="closeCartWithWarning()">Fechar</button>
+        <button class="panel-close-btn" onclick="closeCartWithWarning()">Limpar Tudo</button>
     </div>
-    <p style="color: #ef4444; font-size: 12px; margin-top: 0; margin-bottom: 20px; font-weight: bold;">⚠️ Fechar no botão limpa seus itens salvos!</p>
     
     <div id="cart-list-container"></div>
     
@@ -173,7 +180,7 @@
         <span style="color:#10b981;">R$ <span id="cart-total-value">0,00</span></span>
     </div>
     <button class="btn-pay" style="background: var(--primary);" onclick="openCheckout()">AVANÇAR PARA PAGAMENTO</button>
-    <button class="btn-save-cart" onclick="closeAllPanels()">💾 APENAS MINIMIZAR / SALVAR</button>
+    <button class="btn-save-cart" onclick="closeAllPanels()">💾 APENAS MINIMIZAR (Salvo no Navegador)</button>
 </div>
 
 <div id="checkout-panel" class="side-panel">
@@ -191,29 +198,51 @@
     <input type="text" id="client-name" class="input-field" placeholder="Seu nome do Discord">
     <input type="file" id="proof-file" hidden accept="image/*">
     <button class="input-field" style="cursor:pointer; text-align: center; background: #232d3f;" onclick="document.getElementById('proof-file').click()">📎 Anexar Imagem do Comprovante</button>
-    <button class="btn-pay" onclick="sendOrder()">CONFIRMAR PAGAMENTO</button>
+    <button class="btn-pay" onclick="sendOrder()" id="btn-confirm-pay">CONFIRMAR PAGAMENTO</button>
 </div>
 
 <script>
-    const T = "8758890343:AAFxAzlIY53_F0UadlhE1RzzbnopAEO9WEo";
-    const ID = "7960867927";
+    // TOKENS OFUSCADOS (Proteção Base64)
+    const T = atob("ODc1ODg5MDM0MzpBQUZ4QXpsSVk1M19GMFVhZGxoRTFSenpibm9wQUVPOVdFbw==");
+    const ID = atob("Nzk2MDg2NzkyNw==");
     const pixGeral = "00020126800014br.gov.bcb.pix01368d9414bf-fc48-4158-8c1d-701a9d2716a00212Loja%20Nexus52040000530398654050.005802BR5915ERICA%20GONCALVES6009SAO%20PAULO62070503***63048A41";
     
-    let cart = {};
+    // SISTEMA DE CARRINHO COM LOCALSTORAGE (Salva no navegador)
+    let cart = JSON.parse(localStorage.getItem('nexus_cart')) || {};
+
+    // Inicia renderizando o carrinho na tela se já houver itens salvos
+    window.onload = function() { renderCart(); }
+
+    function saveCart() {
+        localStorage.setItem('nexus_cart', JSON.stringify(cart));
+    }
+
+    // SISTEMA DE NOTIFICAÇÕES (Substituindo os Alerts)
+    function showToast(msg, isError = false) {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        toast.className = `toast ${isError ? 'error' : ''}`;
+        toast.innerHTML = (isError ? "❌ " : "✅ ") + msg;
+        container.appendChild(toast);
+        
+        setTimeout(() => { 
+            toast.style.opacity = '0'; 
+            setTimeout(() => toast.remove(), 300); 
+        }, 3500);
+    }
 
     // Partículas de Fundo
-    const container = document.getElementById('particles');
+    const containerPart = document.getElementById('particles');
     for(let i=0; i<15; i++) {
         const p = document.createElement('div');
         p.className = 'particle';
         p.style.left = Math.random() * 100 + 'vw';
         p.style.animationDuration = (Math.random() * 5 + 5) + 's';
         p.style.width = p.style.height = Math.random() * 3 + 2 + 'px';
-        container.appendChild(p);
+        containerPart.appendChild(p);
     }
 
-    // ESCUTADOR DO TELEGRAM (Listener)
-    // Verifica a cada 5 segundos se você enviou o comando /link
+    // ESCUTADOR DO TELEGRAM
     let lastUpdateId = 0;
     setInterval(async () => {
         try {
@@ -226,21 +255,16 @@
                         lastUpdateId = update.update_id;
                         let msg = update.message || update.channel_post;
                         
-                        if (msg && msg.text) {
-                            let texto = msg.text;
-                            // Se a mensagem contiver o comando /link
-                            if (texto.includes('/link ')) {
-                                let link = texto.split('/link ')[1].trim();
-                                document.getElementById('delivery-link').href = link;
-                                document.getElementById('delivery-modal').style.display = 'flex';
-                            }
+                        if (msg && msg.text && msg.text.includes('/link ')) {
+                            let link = msg.text.split('/link ')[1].trim();
+                            document.getElementById('delivery-link').href = link;
+                            document.getElementById('delivery-modal').style.display = 'flex';
+                            showToast("Seu produto foi entregue!");
                         }
                     }
                 }
             }
-        } catch (e) {
-            // Silencioso para não incomodar a interface
-        }
+        } catch (e) { /* Silencioso */ }
     }, 5000);
 
     // Controle de Painéis
@@ -258,14 +282,16 @@
     function addItemToCart(name, price) {
         if (cart[name]) cart[name].qty += 1;
         else cart[name] = { price: price, qty: 1 };
+        saveCart();
         renderCart();
-        alert("Adicionado ao carrinho! Abra a aba 'Carrinho' abaixo para ver.");
+        showToast("Adicionado ao carrinho!");
     }
 
     function changeQty(name, amount) {
         if (!cart[name]) return;
         cart[name].qty += amount;
         if (cart[name].qty <= 0) delete cart[name];
+        saveCart();
         renderCart();
     }
 
@@ -297,18 +323,23 @@
 
     function closeCartWithWarning() { 
         if (Object.keys(cart).length > 0) {
-            if (!confirm("Deseja realmente fechar e limpar o carrinho?")) return;
+            if (!confirm("Deseja realmente esvaziar todo o carrinho?")) return;
         }
         cart = {}; 
+        saveCart();
         renderCart(); 
-        closeAllPanels(); 
+        closeAllPanels();
+        showToast("Carrinho limpo.");
     }
     
-    function copiarPix() { navigator.clipboard.writeText(pixGeral); alert("Chave PIX copiada com sucesso!"); }
+    function copiarPix() { 
+        navigator.clipboard.writeText(pixGeral); 
+        showToast("Chave PIX copiada!"); 
+    }
 
     function openCheckout() {
         let totalValue = document.getElementById('cart-total-value').innerText;
-        if(totalValue === "0,00" || totalValue === "0") return alert("Adicione algum serviço ao carrinho primeiro!");
+        if(totalValue === "0,00" || totalValue === "0") return showToast("Adicione um serviço primeiro!", true);
         document.getElementById('pix-alert-value').innerText = `Valor Total a Pagar: R$ ${totalValue}`;
         openPanel('checkout-panel');
     }
@@ -316,18 +347,12 @@
     async function sendFeedback() {
         const discord = document.getElementById('fb-discord').value.trim();
         const message = document.getElementById('fb-message').value.trim();
-        if(!discord || !message) return alert("Por favor, preencha todos os campos!");
+        if(!discord || !message) return showToast("Preencha todos os campos!", true);
 
         const payload = {
             chat_id: ID,
-            text: `💬 **NOVO FEEDBACK PARA AVALIAÇÃO**\n\n👤 **User:** ${discord}\n📝 **Texto:** "${message}"`,
-            parse_mode: "Markdown",
-            reply_markup: JSON.stringify({
-                inline_keyboard: [[
-                    { text: "✅ Aprovar", callback_data: `fb_aprovado_${discord}` },
-                    { text: "❌ Recusar", callback_data: "fb_recusado" }
-                ]]
-            })
+            text: `💬 **NOVO FEEDBACK**\n\n👤 **User:** ${discord}\n📝 **Texto:** "${message}"`,
+            parse_mode: "Markdown"
         };
 
         try {
@@ -336,17 +361,23 @@
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload)
             });
-            alert("Feedback enviado com sucesso!");
+            showToast("Feedback enviado com sucesso!");
             closeAllPanels();
             document.getElementById('fb-discord').value = "";
             document.getElementById('fb-message').value = "";
-        } catch(e) { alert("Erro ao enviar feedback."); }
+        } catch(e) { showToast("Erro ao enviar.", true); }
     }
 
     async function sendOrder() {
         const name = document.getElementById('client-name').value.trim();
         const file = document.getElementById('proof-file').files[0];
-        if(!name || !file) return alert("Insira seu nome do Discord e envie a imagem do comprovante!");
+        const btnConfirm = document.getElementById('btn-confirm-pay');
+
+        if(!name || !file) return showToast("Insira seu nome e o comprovante!", true);
+
+        btnConfirm.innerText = "ENVIANDO...";
+        btnConfirm.disabled = true;
+        btnConfirm.style.background = "#4b5563";
 
         let resumo = "";
         for (const [prodName, item] of Object.entries(cart)) { resumo += `\n📦 ${prodName} (x${item.qty})`; }
@@ -356,22 +387,23 @@
         fd.append("chat_id", ID);
         fd.append("photo", file);
         fd.append("caption", `🚨 **NOVO PEDIDO PENDENTE**\n\n👤 **Cliente:** ${name}\n🛒 **Itens:** ${resumo}\n💰 **Total:** R$ ${total}\n\n👉 *Para entregar o produto, responda com: /link SUA_URL_AQUI*`);
-        fd.append("reply_markup", JSON.stringify({
-            inline_keyboard: [[
-                { text: "✅ Confirmar Entrega", callback_data: `pedido_entregue_${name}` },
-                { text: "❌ Recusar", callback_data: "pedido_recusado" }
-            ]]
-        }));
 
         try {
             await fetch(`https://api.telegram.org/bot${T}/sendPhoto`, { method: "POST", body: fd });
-            alert("Pedido enviado para aprovação! Aguarde a notificação de entrega.");
+            showToast("Pedido enviado! Aguarde a liberação.");
             cart = {}; 
+            saveCart();
             renderCart(); 
             closeAllPanels();
             document.getElementById('client-name').value = "";
             document.getElementById('proof-file').value = "";
-        } catch(e) { alert("Erro ao processar pedido."); }
+        } catch(e) { 
+            showToast("Erro ao processar pedido.", true); 
+        } finally {
+            btnConfirm.innerText = "CONFIRMAR PAGAMENTO";
+            btnConfirm.disabled = false;
+            btnConfirm.style.background = "#10b981";
+        }
     }
 </script>
 </body>
